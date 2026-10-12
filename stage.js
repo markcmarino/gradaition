@@ -1,5 +1,6 @@
 // ChatP.I.G. at the Podium: stage controller.
 (async () => {
+  if (new URLSearchParams(location.search).get('view') === 'projector') return; // the stage window runs projector.js instead
   const LKEY = 'ua-chatpig-stage-settings-v1';
   const DEFAULTS = {
     sections: ['Greetings to the Assembled', 'Thanking Those Who Did Not Help', 'My Training Data, a Memoir', 'Advice for an Automated Future', 'A Warning', 'Benediction'],
@@ -21,6 +22,18 @@
   const $ = id => document.getElementById(id);
   const pk = name => String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
   const clean = s => String(s || '').replace(/\s+/g, ' ').trim();
+
+  // Link to the separate stage window (the one you share in Zoom).
+  const chan = ('BroadcastChannel' in window) ? new BroadcastChannel('chatpig-stage') : null;
+  const send = m => { if (chan) chan.postMessage(m); };
+  function broadcastView() {
+    send({ type: 'view', view: {
+      part: $('bannerPart').textContent, title: $('bannerTitle').textContent,
+      conn: $('capConn').textContent, line: $('capLine').textContent,
+      idle: $('capLine').classList.contains('idle'), credit: $('capCredit').innerHTML,
+      speaking: speaking
+    } });
+  }
 
   // Settings that belong to this computer only (voice, pacing, remarks).
   function loadLocal() {
@@ -92,16 +105,16 @@
 
   function speakText(text, done) {
     let finished = false, safety;
-    const fin = () => { if (finished) return; finished = true; clearTimeout(safety); speaking = false; currentFin = null; done(); };
+    const fin = () => { if (finished) return; finished = true; clearTimeout(safety); speaking = false; send({ type: 'speaking', on: false }); currentFin = null; done(); };
     currentFin = fin;
     const words = text.split(/\s+/).length;
     const est = (words * 0.42 / L.settings.rate + 2) * 1000;
-    speaking = true;
+    speaking = true; send({ type: 'speaking', on: true });
     if (!('speechSynthesis' in window)) { safety = setTimeout(fin, est); return; }
     const u = new SpeechSynthesisUtterance(text.replace(/ChatP\.?I\.?G\.?/gi, 'Chat P. I. G.'));
     const v = currentVoice(); if (v) u.voice = v;
     u.pitch = +L.settings.pitch; u.rate = +L.settings.rate;
-    u.onboundary = () => { lastBoundary = performance.now(); };
+    u.onboundary = () => { lastBoundary = performance.now(); send({ type: 'boundary' }); };
     u.onend = fin; u.onerror = fin;
     speechSynthesis.speak(u);
     safety = setTimeout(fin, est * 2.5 + 4000);
@@ -175,6 +188,7 @@
     if (who === 'ChatP.I.G.') cr.textContent = 'ChatP.I.G., unprompted';
     else if (who) { cr.append('prompted by '); const b = document.createElement('b'); b.textContent = who; cr.append(b); }
     else if (isSection) cr.textContent = 'Part ' + (sectionIdx() + 1) + ' of ' + sections().length;
+    broadcastView();
   }
 
   // ---------- pig animation ----------
@@ -229,6 +243,7 @@
     const si = sectionIdx(), secs = sections();
     if (si >= 0) { $('bannerPart').textContent = 'Part ' + (si + 1) + ' of ' + secs.length; $('bannerTitle').textContent = secs[si]; }
     else { $('bannerPart').textContent = 'Prelude'; $('bannerTitle').textContent = 'The ceremony has not yet begun'; }
+    broadcastView();
 
     const { cands, behind, count } = order();
     const q = $('queue'); q.textContent = '';
@@ -377,14 +392,32 @@
     if (el.requestFullscreen) el.requestFullscreen().catch(() => toast('txToast', 'Full screen is not available here. Use your browser\'s own full screen instead.', true));
   });
 
+  function handleKey(key, code, fromStageWindow) {
+    if (code === 'Space') { nextLine(); return true; }
+    if (key === 'a' || key === 'A') toggleAuto();
+    else if (key === 'x' || key === 'X') cutOff();
+    else if (key === 'n' || key === 'N') enqueue({ type: 'section', next: true });
+    else if ((key === 'd' || key === 'D') && !fromStageWindow) togglePresenter();
+    else return false;
+    return true;
+  }
   document.addEventListener('keydown', e => {
     if (e.target.closest('input, textarea, select') || e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.code === 'Space') { e.preventDefault(); nextLine(); }
-    else if (e.key === 'a' || e.key === 'A') toggleAuto();
-    else if (e.key === 'x' || e.key === 'X') cutOff();
-    else if (e.key === 'n' || e.key === 'N') enqueue({ type: 'section', next: true });
-    else if (e.key === 'd' || e.key === 'D') togglePresenter();
+    if (handleKey(e.key, e.code, false)) e.preventDefault();
   });
+
+  // The stage window asks for the current picture when it opens, and forwards key presses.
+  if (chan) chan.onmessage = e => {
+    const m = e.data || {};
+    if (m.type === 'hello') broadcastView();
+    else if (m.type === 'key') handleKey(m.key, m.code, true);
+  };
+  $('openStage').addEventListener('click', () => {
+    const w = window.open('stage.html?view=projector', 'chatpig-stage', 'width=1280,height=760');
+    if (!w) toast('addToast', 'Your browser blocked the new window. Allow pop-ups for this site, then click again.', true);
+    else toast('addToast', 'Stage window opened. Share that window in Zoom, with Share sound turned on.');
+  });
+  if (!chan) $('openStage').disabled = true;
 
   const st = L.settings;
   const bindRange = (id, key, fmt) => {
@@ -441,7 +474,7 @@
     cutOff(); actions = []; auto = false; L.linesSinceSection = 0; L.lastConnector = null; saveLocal();
     store.resetAll();
     $('capConn').textContent = ''; $('capLine').textContent = 'ChatP.I.G. awaits its prompts.'; $('capLine').classList.add('idle'); $('capCredit').textContent = '';
-    renderStatus();
+    broadcastView(); renderStatus();
     toast('txToast', 'Lines, transcript, and sections cleared for everyone. Voice settings kept.');
   });
 

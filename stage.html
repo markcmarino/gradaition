@@ -81,6 +81,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .float-controls { position: absolute; right: 12px; bottom: 12px; display: none; gap: 6px; opacity: .35; transition: opacity .2s; }
 .float-controls:hover, .float-controls:focus-within { opacity: 1; }
 .app.presenter .float-controls { display: flex; }
+.app.projector .float-controls { display: none; }
+.app.projector .stage { cursor: none; }
 
 /* ---------- Desk ---------- */
 .desk { background: var(--desk); border-left: 1px solid var(--gold-soft); overflow-y: auto; min-height: 0; padding: 0 16px 28px; display: flex; flex-direction: column; }
@@ -270,6 +272,7 @@ details[open] summary { margin-bottom: 8px; }
     <div class="status-row">
       <span class="pill" id="status"><span class="dot"></span><span id="statusText">Idle</span></span>
       <div class="btns">
+        <button class="btn small primary" id="openStage" type="button">Open stage window</button>
         <button class="btn small" id="fullscreen" type="button">Full screen</button>
         <button class="btn small" id="presenter" type="button">Hide controls <kbd>D</kbd></button>
       </div>
@@ -379,5 +382,6 @@ details[open] summary { margin-bottom: 8px; }
 <script src="config.js"></script>
 <script src="store.js"></script>
 <script src="stage.js"></script>
+<script src="projector.js"></script>
 </body>
 </html>

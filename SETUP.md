@@ -18,7 +18,7 @@ Total setup time: about 30 minutes, once.
 2. Click the **+** at the top right, then **New repository**.
 3. Name it `gradaition`. Choose **Public** (GitHub Pages is free for public repositories). Leave everything else as is and click **Create repository**.
 4. On the empty repository page, click the link **uploading an existing file**.
-5. Unzip the folder I sent you. Drag all the files inside it (`index.html`, `stage.html`, `stage.js`, `store.js`, `config.js`, `database.rules.json`, `SETUP.md`) onto the upload area. Drag the files themselves, not the folder.
+5. Unzip the folder I sent you. Drag all the files inside it (`index.html`, `stage.html`, `stage.js`, `projector.js`, `store.js`, `config.js`, `database.rules.json`, `SETUP.md`) onto the upload area. Drag the files themselves, not the folder.
 6. Scroll down and click **Commit changes**.
 7. Click **Settings** (top of the repository), then **Pages** in the left sidebar.
 8. Under **Branch**, choose `main`, keep the folder as `/ (root)`, and click **Save**.
@@ -81,15 +81,22 @@ For a clean slate without erasing the rehearsal, change `room: "gradaition"` in 
 
 ## On the night
 
-1. Open `stage.html` in Chrome on the computer that will share ChatP.I.G. Click **Test voice** to check sound and pick a voice.
-2. In Zoom, click **Share**, choose the Chrome window, and turn on **Share sound** at the bottom of the share dialog.
-3. Click **Copy** next to the audience link and paste it into the Zoom chat.
-4. Click **Hide controls** (or press **D**) for a clean stage. Press **D** again to bring the controls back.
-5. Keyboard shortcuts: **Space** speaks the next line, **A** turns auto-run on and off, **N** moves to the next section, **X** cuts ChatP.I.G. off.
-6. Afterward, click **Copy transcript** for the Journal of Untrained Models.
+You'll have two windows: a **control window** you keep to yourself, and a **stage window** that shows only ChatP.I.G. and his captions. The Zoom audience sees only the stage window.
+
+1. Open `stage.html` in Chrome on the computer that will run ChatP.I.G. This is your control window. Click **Test voice** to check sound and pick a voice.
+2. Click **Open stage window** (top of the controls). A second window opens with just ChatP.I.G. If nothing opens, allow pop-ups for your site and click again.
+3. Arrange them. With two monitors, drag the stage window to the second one. With one screen, put the two windows side by side.
+4. In Zoom, click **Share**, choose the **ChatP.I.G. on stage** window (not the control window), and turn on **Share sound** at the bottom of the share dialog.
+5. Click **Copy** next to the audience link and paste it into the Zoom chat. Tell people: open the link on your phone, watch ChatP.I.G. in Zoom.
+6. Run everything from the control window. Scroll, veto, and click freely; the audience never sees it.
+7. Keyboard shortcuts work in either window: **Space** speaks the next line, **A** turns auto-run on and off, **N** moves to the next section, **X** cuts ChatP.I.G. off. Double-click the stage window to make it fill the screen.
+8. Afterward, click **Copy transcript** for the Journal of Untrained Models.
+
+Keep the control window open the whole time. The voice comes from it, and the stage window only mirrors it.
 
 ## If something goes wrong
 
+- **The stage window is frozen or blank.** Close it and click **Open stage window** again. It picks up where things are.
 - **ChatP.I.G. is silent.** Click **Test voice**. If you hear nothing, try another voice from the list. Chrome and Edge have the most voices. Check that **Share sound** is on in Zoom.
 - **Audience lines don't arrive.** The stage's **Audience link** panel must say **live**. If it says rehearsal mode, `config.js` is missing the Firebase settings or has a typo, such as a missing comma.
 - **Someone is stuck on "Waiting its turn."** That's the fairness rule working. Their line is in the queue, and ChatP.I.G. reads whoever has been heard least first.
