@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "$room": {
+      ".read": true,
+      "lines": {
+        "$lineId": {
+          ".write": true,
+          ".validate": "newData.hasChildren(['name', 'uid', 'text', 'status']) && newData.child('name').isString() && newData.child('name').val().length <= 40 && newData.child('text').isString() && newData.child('text').val().length <= 240"
+        }
+      },
+      "transcript": {
+        "$entryId": { ".write": true }
+      },
+      "state": { ".write": true },
+      ".write": "!newData.exists()"
+    }
+  }
+}

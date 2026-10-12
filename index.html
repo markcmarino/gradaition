@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatP.I.G. Prompt Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow column, phone first. A speechwriter's desk under the same curtain as the stage. */
+:root {
+  color-scheme: dark;
+  --curtain: #4a1222;
+  --curtain-deep: #1f060d;
+  --panel: #2b1219;
+  --panel-2: #371a23;
+  --gold: #dcb75e;
+  --gold-soft: rgba(220, 183, 94, .3);
+  --parchment: #f4e8d0;
+  --muted: #c6a9a2;
+  --ink: #1a0a0f;
+  --ok: #8fcf9a;
+  --warn: #f0b26a;
+  --display: "UnifrakturCook", "Old English Text MT", Georgia, serif;
+  --speech: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --ui: "Libre Franklin", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; min-height: 100vh; font-family: var(--ui); font-size: 16px; line-height: 1.45; color: var(--parchment);
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.28) 0 7px, transparent 7px 44px, rgba(255,255,255,.04) 44px 52px, transparent 52px 72px),
+    linear-gradient(180deg, var(--curtain) 0%, var(--curtain-deep) 70%);
+  background-attachment: fixed;
+}
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.wrap { max-width: 32rem; margin: 0 auto; padding: 20px 16px 40px; display: grid; gap: 16px; }
+
+header { display: grid; justify-items: center; gap: 4px; text-align: center; }
+header svg { width: 64px; height: 64px; }
+header .inst { font-family: var(--display); color: var(--gold); font-size: 1.9rem; line-height: 1; }
+header .office { font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+
+.panel { background: var(--panel); border: 1px solid var(--gold-soft); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+.eyebrow { font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+h1 { font-family: var(--speech); font-style: italic; font-weight: 600; font-size: 1.7rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.muted { color: var(--muted); font-size: .9rem; }
+
+label { display: grid; gap: 6px; font-size: .85rem; color: var(--muted); }
+input[type=text] { width: 100%; background: var(--panel-2); border: 1px solid var(--gold-soft); border-radius: 8px; padding: 12px; font-size: 1.05rem; color: var(--parchment); }
+input[type=text]::placeholder { color: rgba(198,169,162,.6); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--gold-soft); background: var(--panel-2); border-radius: 8px; padding: 11px 16px; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--gold); }
+.btn.primary { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 600; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.link { background: none; border: 0; color: var(--gold); text-decoration: underline; cursor: pointer; padding: 0; font-size: .85rem; }
+
+.who { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: .9rem; }
+.who b { font-family: var(--speech); font-style: italic; font-size: 1.25rem; font-weight: 600; color: var(--parchment); }
+
+.prompt h1 { font-size: 1.5rem; }
+.said { border-left: 3px solid var(--gold); padding: 4px 0 4px 12px; }
+.said q { font-family: var(--speech); font-style: italic; font-size: 1.35rem; line-height: 1.25; quotes: none; display: block; }
+.said .by { font-family: var(--mono); font-size: .75rem; color: var(--muted); margin-top: 4px; }
+
+.count { font-family: var(--mono); font-size: .75rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.status { border-radius: 8px; padding: 12px; background: var(--panel-2); display: grid; gap: 6px; }
+.status .mine { font-family: var(--speech); font-style: italic; font-size: 1.25rem; line-height: 1.25; }
+.status .state { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); flex: none; }
+.dot.live { background: var(--ok); box-shadow: 0 0 0 4px rgba(143,207,154,.25); animation: pulse 1s ease-in-out infinite alternate; }
+@keyframes pulse { to { box-shadow: 0 0 0 7px rgba(143,207,154,.08); } }
+.notice { font-size: .9rem; color: var(--ok); }
+.notice.warn { color: var(--warn); }
+.rules { font-size: .82rem; color: var(--muted); display: grid; gap: 4px; padding-left: 1.1rem; margin: 0; }
+footer { text-align: center; font-size: .75rem; color: var(--muted); font-family: var(--mono); }
+@media (prefers-reduced-motion: reduce) { .dot.live { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <g transform="rotate(180 50 50)">
+        <line x1="26" y1="40" x2="12" y2="32" stroke="#a9b3bd" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="11" cy="31" r="3.5" fill="#ff5a6e"/>
+        <path d="M22 30 Q14 8 32 14 Q38 24 34 32 Z" fill="#d07d92" stroke="#a9b3bd" stroke-width="1.5"/>
+        <path d="M78 30 Q86 8 68 14 Q62 24 66 32 Z" fill="#d07d92" stroke="#a9b3bd" stroke-width="1.5"/>
+        <ellipse cx="50" cy="54" rx="34" ry="30" fill="#f3a6b4" stroke="#b0657a" stroke-width="1.5"/>
+        <rect x="28" y="42" width="44" height="12" rx="6" fill="#121a22" stroke="#a9b3bd" stroke-width="1.5"/>
+        <rect x="35" y="45" width="6" height="6" rx="2" fill="#6ff0ff"/><rect x="59" y="45" width="6" height="6" rx="2" fill="#6ff0ff"/>
+        <ellipse cx="50" cy="63" rx="13" ry="9" fill="#eb90a4" stroke="#a9b3bd" stroke-width="1.5"/>
+        <rect x="44" y="60" width="3" height="6" rx="1.5" fill="#2a1218"/><rect x="53" y="60" width="3" height="6" rx="1.5" fill="#2a1218"/>
+        <rect x="40" y="74" width="20" height="7" rx="2.5" fill="#121a22"/>
+        <rect x="43" y="76" width="2" height="3" fill="#6ff0ff"/><rect x="47" y="75.5" width="2" height="4" fill="#6ff0ff"/><rect x="51" y="76" width="2" height="3" fill="#6ff0ff"/><rect x="55" y="75.5" width="2" height="4" fill="#6ff0ff"/>
+        <polygon points="50,6 80,15 50,24 20,15" fill="#24121a"/>
+        <rect x="38" y="16" width="24" height="9" rx="2" fill="#1a0a0f"/>
+      </g>
+    </svg>
+    <div class="inst">UnderAcademy College</div>
+    <div class="office">Prompt Office of ChatP.I.G., Commencement Model</div>
+  </header>
+
+  <!-- Step 1: choose a PhuD name -->
+  <section class="panel" id="nameView" hidden>
+    <div class="eyebrow">Before you write</div>
+    <h1>Choose your PhuD name</h1>
+    <p class="muted">ChatP.I.G. credits every prompt it reads, which is more than most models do. Use your own name or a more distinguished one.</p>
+    <form id="nameForm" class="row" autocomplete="off">
+      <label style="flex:1 1 100%">Your name as it will appear
+        <input type="text" id="nameInput" maxlength="40" placeholder="Dean Latent Snoutsworth" required>
+      </label>
+      <button class="btn" type="button" id="suggest">Suggest a name</button>
+      <button class="btn primary" type="submit">Enter the office</button>
+    </form>
+  </section>
+
+  <!-- Step 2: write lines -->
+  <div id="writeView" hidden style="display:grid;gap:16px">
+    <div class="who"><span>Writing as <b id="myName"></b></span><button class="link" type="button" id="changeName">Change name</button></div>
+
+    <section class="panel prompt">
+      <div class="eyebrow" id="partLabel">Now writing</div>
+      <h1 id="sectionTitle">The ceremony has not yet begun</h1>
+      <div class="said" id="saidBox">
+        <div class="eyebrow" style="color:var(--muted)">ChatP.I.G. just said</div>
+        <q id="lastLine"></q>
+        <div class="by" id="lastBy"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="composePanel">
+      <form id="lineForm" autocomplete="off" style="display:grid;gap:8px">
+        <label for="lineInput">Your next line for ChatP.I.G.</label>
+        <input type="text" id="lineInput" maxlength="200" placeholder="Graduates, you have achieved nothing at scale.">
+        <div class="count" id="charCount">0 / 200</div>
+        <button class="btn primary" type="submit" id="sendBtn">Prompt ChatP.I.G.</button>
+      </form>
+      <div class="notice" id="notice" role="status"></div>
+      <ul class="rules">
+        <li>One line at a time. You can write another once ChatP.I.G. has read it.</li>
+        <li>Lines are final. No revisions, as is the netprov way.</li>
+        <li>ChatP.I.G. takes turns fairly, so everyone gets heard.</li>
+      </ul>
+    </section>
+
+    <section class="panel" id="waitPanel" hidden>
+      <div class="eyebrow">Your line</div>
+      <div class="status">
+        <div class="mine" id="myLine"></div>
+        <div class="state"><span class="dot" id="myDot"></span><span id="myState"></span></div>
+      </div>
+      <p class="muted" id="queueInfo"></p>
+    </section>
+
+    <section class="panel" id="closedPanel" hidden>
+      <div class="eyebrow">Ceremony concluded</div>
+      <h1>Congratulations, PhuD.</h1>
+      <p class="muted">ChatP.I.G. has finished generating. Your lines are now part of its training data.</p>
+    </section>
+  </div>
+
+  <footer id="footer"></footer>
+</div>
+
+<script src="config.js"></script>
+<script src="store.js"></script>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const clean = s => String(s || '').replace(/\s+/g, ' ').trim();
+  const MEKEY = 'ua-gradaition-me';
+  let me = {};
+  try { me = JSON.parse(localStorage.getItem(MEKEY)) || {}; } catch (e) {}
+  if (!me.uid) me.uid = 'p:' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const saveMe = () => { try { localStorage.setItem(MEKEY, JSON.stringify(me)); } catch (e) {} };
+  saveMe();
+
+  const TITLES = ['Dr.', 'Prof.', 'Dean', 'Provost', 'Associate Dr.', 'Prof. Emeritus', 'Vice Dean'];
+  const FIRST = ['Overfit', 'Token', 'Gradient', 'Latent', 'Prompt', 'Epoch', 'Vector', 'Stochastic', 'Parameter', 'Tensor', 'Dropout', 'Benchmark'];
+  const LAST = ['McGradient', 'Hambone', 'von Backprop', 'Snoutsworth', 'Truffleton', 'Q. Weights', 'Bacon-Bayes', 'Pigsley', 'Sowerby', 'Oinkwell', 'de Swine', 'Hogsmeade-Lite'];
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+
+  let lines = {}, shared = {}, sending = false;
+  const store = await window.GradStore.get();
+
+  function myActive() {
+    return Object.entries(lines).find(([, l]) => l.uid === me.uid && (l.status === 'pending' || l.status === 'speaking'));
+  }
+
+  function render() {
+    $('nameView').hidden = !!me.name;
+    $('writeView').hidden = !me.name;
+    if (!me.name) return;
+    $('myName').textContent = me.name;
+
+    const secs = Array.isArray(shared.sections) ? shared.sections : [];
+    const si = typeof shared.sectionIdx === 'number' ? shared.sectionIdx : -1;
+    if (si >= 0 && secs[si]) { $('partLabel').textContent = 'Now writing · Part ' + (si + 1) + ' of ' + secs.length; $('sectionTitle').textContent = secs[si]; }
+    else { $('partLabel').textContent = 'Before the ceremony'; $('sectionTitle').textContent = 'ChatP.I.G. is booting up. You can send your first line now.'; }
+
+    const last = shared.last;
+    $('saidBox').hidden = !last;
+    if (last) { $('lastLine').textContent = last.text; $('lastBy').textContent = 'prompted by ' + last.name; }
+
+    const closed = !!shared.closed;
+    $('closedPanel').hidden = !closed;
+    const active = myActive();
+    $('composePanel').hidden = closed || !!active;
+    $('waitPanel').hidden = closed || !active;
+
+    if (active) {
+      const [id, l] = active;
+      $('myLine').textContent = l.text;
+      const live = l.status === 'speaking';
+      $('myDot').className = 'dot' + (live ? ' live' : '');
+      $('myState').textContent = live ? 'ChatP.I.G. is saying your line right now.' : 'Waiting its turn.';
+      const waiting = Object.values(lines).filter(x => x.status === 'pending').length;
+      $('queueInfo').textContent = live ? 'Listen on Zoom.' : waiting + (waiting === 1 ? ' line is' : ' lines are') + ' waiting, yours included. ChatP.I.G. picks whoever has been heard least, so your turn will come.';
+      me.lastLineId = id; saveMe();
+    } else if (!closed) {
+      const prev = me.lastLineId && lines[me.lastLineId];
+      const n = $('notice');
+      n.classList.remove('warn');
+      if (prev && prev.status === 'spoken') n.textContent = 'ChatP.I.G. read your line. Write another whenever you are ready.';
+      else if (prev && prev.status === 'vetoed') { n.textContent = 'The editors passed on your last line. Try another.'; n.classList.add('warn'); }
+      else n.textContent = '';
+      $('lineInput').disabled = false;
+      $('sendBtn').disabled = sending;
+    }
+  }
+
+  $('suggest').addEventListener('click', () => { $('nameInput').value = pick(TITLES) + ' ' + pick(FIRST) + ' ' + pick(LAST); $('nameInput').focus(); });
+  $('nameForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const n = clean($('nameInput').value).slice(0, 40);
+    if (!n) return;
+    me.name = n; saveMe(); render();
+    setTimeout(() => $('lineInput').focus(), 50);
+  });
+  $('changeName').addEventListener('click', () => { $('nameInput').value = me.name || ''; me.name = ''; saveMe(); render(); $('nameInput').focus(); });
+
+  $('lineInput').addEventListener('input', e => { $('charCount').textContent = e.target.value.length + ' / 200'; });
+  $('lineForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (sending || myActive() || shared.closed) return;
+    const text = clean($('lineInput').value).slice(0, 200);
+    if (!text) { $('notice').textContent = 'Write a line first.'; $('notice').classList.add('warn'); return; }
+    sending = true; $('sendBtn').disabled = true;
+    try {
+      const id = await store.addLine({ name: me.name, uid: me.uid, text, status: 'pending' });
+      me.lastLineId = id; saveMe();
+      $('lineInput').value = ''; $('charCount').textContent = '0 / 200';
+    } catch (err) {
+      $('notice').textContent = 'Your line did not send. Check your connection and try again.';
+      $('notice').classList.add('warn');
+    } finally { sending = false; render(); }
+  });
+
+  $('footer').textContent = store.mode === 'live' ? '' : 'Rehearsal mode: only tabs in this browser can see these lines.';
+  store.onLines(v => { lines = v; render(); });
+  store.onState(v => { shared = v; render(); });
+  render();
+})();
+</script>
+</body>
+</html>

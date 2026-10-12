@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatP.I.G. at the Podium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a theatre stage (curtain, spotlight, upside-down pig at a lectern) beside a stage manager's desk. Single deliberate look, built for screen sharing. */
+:root {
+  color-scheme: dark;
+  --curtain: #4a1222;
+  --curtain-deep: #1f060d;
+  --desk: #241016;
+  --desk-2: #321821;
+  --gold: #dcb75e;
+  --gold-soft: rgba(220, 183, 94, .28);
+  --parchment: #f4e8d0;
+  --muted: #c6a9a2;
+  --ink: #1a0a0f;
+  --pig: #f3a6b4;
+  --pig-deep: #d77b90;
+  --snout: #eb90a4;
+  --mouth: #5c1426;
+  --ok: #8fcf9a;
+  --warn: #f0b26a;
+  --display: "UnifrakturCook", "Old English Text MT", Georgia, serif;
+  --speech: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --ui: "Libre Franklin", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --spot: .18;
+}
+html, body { height: 100%; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--curtain-deep); color: var(--parchment); font-family: var(--ui); font-size: 14px; }
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 410px; height: 100%; }
+.app.presenter { grid-template-columns: minmax(0, 1fr); }
+.app.presenter .desk { display: none; }
+
+/* ---------- Stage ---------- */
+.stage {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 20px 24px; min-height: 0; overflow: hidden;
+  background:
+    radial-gradient(ellipse 42% 52% at 50% 50%, rgba(255, 226, 168, var(--spot)) 0%, transparent 72%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.30) 0 7px, transparent 7px 44px, rgba(255,255,255,.045) 44px 52px, transparent 52px 72px),
+    linear-gradient(180deg, var(--curtain) 0%, var(--curtain-deep) 100%);
+  transition: --spot .4s;
+}
+.stage::before { /* valance */
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 14px;
+  background: repeating-radial-gradient(circle at 30px -14px, var(--curtain-deep) 0 28px, transparent 28px 60px);
+  opacity: .9;
+}
+.crest { text-align: center; display: grid; gap: 2px; padding-top: 6px; }
+.crest .inst { font-family: var(--display); color: var(--gold); font-size: clamp(1.6rem, 3vw, 2.5rem); line-height: 1; text-shadow: 0 2px 0 rgba(0,0,0,.4); }
+.crest .occ { font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+.banner { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; justify-content: center; border-top: 1px solid var(--gold-soft); border-bottom: 1px solid var(--gold-soft); padding: 5px 16px; }
+.banner .part { font-family: var(--mono); font-size: .72rem; color: var(--gold); letter-spacing: .06em; }
+.banner .title { font-family: var(--speech); font-style: italic; font-weight: 600; font-size: clamp(1.05rem, 1.7vw, 1.35rem); }
+.pig-wrap { flex: 1 1 auto; min-height: 0; display: flex; align-items: flex-end; justify-content: center; width: 100%; }
+.pig-wrap svg { height: 100%; max-height: 52vh; width: auto; max-width: 100%; overflow: visible; }
+.eye { transform-box: fill-box; transform-origin: center; }
+#tassel { transform-box: view-box; transform-origin: 200px 70px; transition: transform .6s ease; }
+.speaking #tassel { animation: swing 1.1s ease-in-out infinite alternate; }
+@keyframes swing { from { transform: rotate(-5deg); } to { transform: rotate(6deg); } }
+
+.caption { width: min(100%, 56rem); min-height: 9.5rem; display: grid; align-content: start; justify-items: center; gap: 6px; text-align: center; padding-bottom: 6px; }
+.caption .conn { font-family: var(--speech); font-style: italic; color: var(--gold); font-size: 1.15rem; min-height: 1.4em; }
+.caption .line { font-family: var(--speech); font-style: italic; font-weight: 500; font-size: clamp(1.5rem, 3vw, 2.6rem); line-height: 1.18; text-wrap: balance; max-width: 30ch; }
+.caption .line.idle { color: var(--muted); font-size: clamp(1.2rem, 2.2vw, 1.8rem); }
+.caption .credit { font-family: var(--mono); font-size: .75rem; letter-spacing: .08em; color: var(--muted); min-height: 1.2em; }
+.caption .credit b { color: var(--parchment); font-weight: 500; }
+
+.float-controls { position: absolute; right: 12px; bottom: 12px; display: none; gap: 6px; opacity: .35; transition: opacity .2s; }
+.float-controls:hover, .float-controls:focus-within { opacity: 1; }
+.app.presenter .float-controls { display: flex; }
+
+/* ---------- Desk ---------- */
+.desk { background: var(--desk); border-left: 1px solid var(--gold-soft); overflow-y: auto; min-height: 0; padding: 0 16px 28px; display: flex; flex-direction: column; }
+.desk section { padding-block: 16px; border-bottom: 1px solid rgba(220,183,94,.14); display: grid; gap: 10px; }
+.desk h2 { margin: 0; font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.desk h2 .count { font-family: var(--mono); letter-spacing: 0; color: var(--muted); text-transform: none; font-weight: 400; }
+.desk p.note { margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.45; }
+.status-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 16px; position: sticky; top: 0; background: var(--desk); z-index: 2; padding-bottom: 10px; border-bottom: 1px solid var(--gold-soft); }
+.pill { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: .75rem; padding: 4px 10px; border-radius: 999px; background: var(--desk-2); border: 1px solid var(--gold-soft); }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.pill.speaking .dot { background: var(--ok); box-shadow: 0 0 0 3px rgba(143,207,154,.25); }
+.pill.waiting .dot { background: var(--warn); }
+.pill.auto { border-color: var(--gold); }
+
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn { border: 1px solid var(--gold-soft); background: var(--desk-2); border-radius: 6px; padding: 7px 11px; cursor: pointer; line-height: 1.2; }
+.btn:hover:not(:disabled) { border-color: var(--gold); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 600; }
+.btn.on { background: rgba(220,183,94,.18); border-color: var(--gold); }
+.btn.danger.armed { background: #7a1d2c; border-color: #e07a8a; }
+.btn kbd { font-family: var(--mono); font-size: .68rem; opacity: .7; margin-left: 4px; }
+.btn.small { padding: 4px 8px; font-size: .78rem; }
+
+label.field { display: grid; gap: 4px; font-size: .78rem; color: var(--muted); }
+input[type=text], textarea, select { background: var(--desk-2); border: 1px solid var(--gold-soft); border-radius: 6px; padding: 8px 10px; color: var(--parchment); width: 100%; box-sizing: border-box; }
+textarea { resize: vertical; min-height: 4.5rem; line-height: 1.4; }
+.row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.row > * { min-width: 0; }
+.grow { flex: 1 1 140px; }
+.toast { font-size: .8rem; color: var(--ok); min-height: 1.1em; }
+.toast.err { color: var(--warn); }
+
+.queue { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.queue li { display: grid; grid-template-columns: 1.8rem minmax(0,1fr) auto; gap: 8px; align-items: start; padding: 8px; border-radius: 6px; background: var(--desk-2); border: 1px solid transparent; }
+.queue li.next { border-color: var(--gold); }
+.queue li.behind { opacity: .6; }
+.queue .rank { font-family: var(--mono); color: var(--gold); font-size: .8rem; padding-top: 1px; font-variant-numeric: tabular-nums; }
+.queue .who { font-weight: 600; font-size: .82rem; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.queue .what { font-family: var(--speech); font-style: italic; font-size: 1.05rem; line-height: 1.3; overflow-wrap: anywhere; }
+.chip { font-family: var(--mono); font-size: .64rem; font-weight: 400; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--gold-soft); color: var(--muted); letter-spacing: .04em; }
+.chip.gold { border-color: var(--gold); color: var(--gold); }
+.veto { background: none; border: 1px solid transparent; color: var(--muted); border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: .75rem; }
+.veto:hover { border-color: #e07a8a; color: #f2b0bb; }
+.empty { color: var(--muted); font-size: .85rem; padding: 10px; border: 1px dashed var(--gold-soft); border-radius: 6px; }
+
+.outline { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; counter-reset: part; }
+.outline button { width: 100%; text-align: left; display: grid; grid-template-columns: 1.6rem 1fr; gap: 6px; background: none; border: 1px solid transparent; border-radius: 6px; padding: 6px 8px; cursor: pointer; }
+.outline button:hover { border-color: var(--gold-soft); }
+.outline li.current button { background: rgba(220,183,94,.14); border-color: var(--gold); }
+.outline li.done button { color: var(--muted); }
+.outline .n { font-family: var(--mono); color: var(--gold); font-size: .78rem; }
+
+.sliders { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+input[type=range] { width: 100%; accent-color: var(--gold); }
+.check { display: flex; gap: 8px; align-items: center; font-size: .85rem; }
+.check input { accent-color: var(--gold); width: 16px; height: 16px; }
+
+.transcript { max-height: 22rem; overflow-y: auto; display: grid; gap: 6px; font-size: .85rem; line-height: 1.4; padding-right: 4px; }
+.transcript .sec { font-family: var(--speech); font-style: italic; font-weight: 600; color: var(--gold); font-size: 1rem; margin-top: 4px; }
+.transcript .ln b { font-weight: 600; }
+.transcript .ln .c { color: var(--gold); font-style: italic; }
+.transcript .rm { color: var(--muted); font-style: italic; }
+.linkbox { display: flex; gap: 8px; align-items: center; background: var(--desk-2); border: 1px solid var(--gold-soft); border-radius: 6px; padding: 6px 6px 6px 10px; }
+.linkbox code { flex: 1 1 auto; min-width: 0; font-family: var(--mono); font-size: .78rem; overflow-wrap: anywhere; color: var(--parchment); }
+.pill.offline .dot { background: #e07a8a; }
+details summary { cursor: pointer; color: var(--muted); font-size: .8rem; }
+details[open] summary { margin-bottom: 8px; }
+
+@media (max-width: 900px) {
+  html, body { height: auto; }
+  .app { grid-template-columns: minmax(0,1fr); height: auto; }
+  .stage { min-height: 88vh; padding-inline: 16px; }
+  .desk { border-left: 0; border-top: 1px solid var(--gold-soft); overflow: visible; }
+  .status-row { position: static; }
+  .sliders { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .speaking #tassel { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <main class="stage" id="stage" aria-label="Commencement stage">
+    <div class="crest">
+      <div class="inst">UnderAcademy College</div>
+      <div class="occ">Gradaition of the PhuDs &middot; MMXXVI &middot; Address by ChatP.I.G.</div>
+    </div>
+    <div class="banner" aria-live="polite">
+      <span class="part" id="bannerPart">Prelude</span>
+      <span class="title" id="bannerTitle">The ceremony has not yet begun</span>
+    </div>
+
+    <div class="pig-wrap">
+      <svg viewBox="0 0 400 560" role="img" aria-label="ChatP.I.G., a robot pig standing upside down on its mortarboard at a lectern">
+        <defs>
+          <radialGradient id="metalPink" cx="45%" cy="35%" r="70%">
+            <stop offset="0" stop-color="#fbd3db"/>
+            <stop offset=".45" stop-color="#f3a6b4"/>
+            <stop offset="1" stop-color="#c47388"/>
+          </radialGradient>
+          <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#c9d2da"/>
+            <stop offset="1" stop-color="#7d8893"/>
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- lectern -->
+        <path d="M100 392 L300 392 L282 560 L118 560 Z" fill="#3a1019"/>
+        <path d="M100 392 L300 392 L297 420 L103 420 Z" fill="#521726"/>
+        <rect x="78" y="380" width="244" height="16" rx="3" fill="#b8913f"/>
+        <rect x="114" y="430" width="172" height="30" rx="4" fill="#c9a24a" stroke="#8a6a22" stroke-width="2"/>
+        <text x="200" y="451" text-anchor="middle" font-family="IBM Plex Mono, Menlo, monospace" font-size="17" font-weight="500" fill="#1a0a0f" letter-spacing="1">ChatP.I.G. v6.0</text>
+        <circle cx="200" cy="508" r="30" fill="none" stroke="#dcb75e" stroke-width="3"/>
+        <text x="200" y="518" text-anchor="middle" font-family="UnifrakturCook, Georgia, serif" font-size="27" fill="#dcb75e">UA</text>
+
+        <g id="bob">
+          <g transform="rotate(180 200 210)">
+            <!-- antenna -->
+            <line x1="98" y1="168" x2="50" y2="140" stroke="url(#steel)" stroke-width="5" stroke-linecap="round"/>
+            <circle id="bulb" cx="46" cy="138" r="9" fill="#ff5a6e" filter="url(#glow)"/>
+            <!-- ears: hinged metal plates -->
+            <path d="M120 132 Q86 50 152 66 Q172 98 162 124 Z" fill="#d07d92" stroke="url(#steel)" stroke-width="4"/>
+            <path d="M280 132 Q314 50 248 66 Q228 98 238 124 Z" fill="#d07d92" stroke="url(#steel)" stroke-width="4"/>
+            <path d="M128 112 L150 86 M136 120 L156 96 M272 112 L250 86 M264 120 L244 96" stroke="#8f4659" stroke-width="3" stroke-linecap="round"/>
+            <!-- neck bolts -->
+            <rect x="54" y="203" width="16" height="26" rx="4" fill="url(#steel)"/>
+            <rect x="330" y="203" width="16" height="26" rx="4" fill="url(#steel)"/>
+            <!-- head -->
+            <ellipse cx="200" cy="215" rx="136" ry="118" fill="url(#metalPink)" stroke="#b0657a" stroke-width="3"/>
+            <path d="M74 165 Q200 122 326 165" stroke="#b0657a" stroke-width="2.5" fill="none"/>
+            <g fill="url(#steel)" stroke="#6c7782" stroke-width="1">
+              <circle cx="316.5" cy="251.3" r="5"/><circle cx="287.7" cy="290" r="5"/><circle cx="112.3" cy="290" r="5"/><circle cx="83.5" cy="251.3" r="5"/>
+              <circle cx="319.8" cy="187.6" r="5"/><circle cx="80.2" cy="187.6" r="5"/>
+            </g>
+            <!-- visor and LED eyes -->
+            <rect x="112" y="166" width="176" height="48" rx="24" fill="#121a22" stroke="url(#steel)" stroke-width="5"/>
+            <g class="eye" id="eyeL"><rect x="140" y="179" width="24" height="22" rx="7" fill="#6ff0ff" filter="url(#glow)"/></g>
+            <g class="eye" id="eyeR"><rect x="236" y="179" width="24" height="22" rx="7" fill="#6ff0ff" filter="url(#glow)"/></g>
+            <!-- monocle, now a camera lens -->
+            <circle cx="248" cy="190" r="24" fill="none" stroke="#dcb75e" stroke-width="5"/>
+            <circle cx="248" cy="166" r="2.5" fill="#8a6a22"/><circle cx="248" cy="214" r="2.5" fill="#8a6a22"/>
+            <!-- status LEDs where the blush was -->
+            <circle cx="112" cy="258" r="7" fill="#ff8fa8" filter="url(#glow)"/>
+            <circle cx="288" cy="258" r="7" fill="#ff8fa8" filter="url(#glow)"/>
+            <!-- snout: speaker housing -->
+            <g id="snout">
+              <ellipse cx="200" cy="245" rx="56" ry="38" fill="#eb90a4" stroke="url(#steel)" stroke-width="5"/>
+              <ellipse cx="200" cy="245" rx="43" ry="27" fill="none" stroke="#c9728a" stroke-width="2"/>
+              <rect x="174" y="235" width="11" height="20" rx="5" fill="#2a1218"/>
+              <rect x="215" y="235" width="11" height="20" rx="5" fill="#2a1218"/>
+            </g>
+            <!-- mouth: LED equalizer -->
+            <rect x="158" y="288" width="84" height="34" rx="9" fill="#121a22" stroke="url(#steel)" stroke-width="4"/>
+            <g id="mouthBars" filter="url(#glow)"><rect x="168.5" y="302" width="6" height="4" rx="2" fill="#6ff0ff"/><rect x="177.5" y="302" width="6" height="4" rx="2" fill="#6ff0ff"/><rect x="186.5" y="302" width="6" height="4" rx="2" fill="#6ff0ff"/><rect x="195.5" y="302" width="6" height="4" rx="2" fill="#6ff0ff"/><rect x="204.5" y="302" width="6" height="4" rx="2" fill="#6ff0ff"/><rect x="213.5" y="302" width="6" height="4" rx="2" fill="#6ff0ff"/><rect x="222.5" y="302" width="6" height="4" rx="2" fill="#6ff0ff"/></g>
+            <!-- mortarboard -->
+            <rect x="150" y="76" width="100" height="36" rx="5" fill="#1a0a0f"/>
+            <polygon points="200,38 320,70 200,102 80,70" fill="#24121a"/>
+            <polygon points="200,38 320,70 200,80 80,70" fill="#2f1822"/>
+            <g id="tassel">
+              <path d="M200 70 Q262 74 302 80 L302 132" stroke="#dcb75e" stroke-width="4" fill="none" stroke-linecap="round"/>
+              <rect x="295" y="128" width="14" height="26" rx="3" fill="#dcb75e"/>
+            </g>
+            <circle cx="200" cy="70" r="6" fill="#dcb75e"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <div class="caption" aria-live="polite">
+      <div class="conn" id="capConn"></div>
+      <div class="line idle" id="capLine">ChatP.I.G. awaits its prompts.</div>
+      <div class="credit" id="capCredit"></div>
+    </div>
+
+    <div class="float-controls">
+      <button class="btn small" id="fNext" type="button">Next line</button>
+      <button class="btn small" id="fShow" type="button">Show controls</button>
+    </div>
+  </main>
+
+  <aside class="desk" aria-label="Stage manager's desk">
+    <div class="status-row">
+      <span class="pill" id="status"><span class="dot"></span><span id="statusText">Idle</span></span>
+      <div class="btns">
+        <button class="btn small" id="fullscreen" type="button">Full screen</button>
+        <button class="btn small" id="presenter" type="button">Hide controls <kbd>D</kbd></button>
+      </div>
+    </div>
+
+    <section>
+      <h2>Audience link <span class="count" id="modeChip"></span></h2>
+      <div class="linkbox"><code id="audLink"></code><button class="btn small" id="copyLink" type="button">Copy</button></div>
+      <p class="note" id="modeNote"></p>
+    </section>
+
+    <section>
+      <h2>Ceremony</h2>
+      <div class="btns">
+        <button class="btn primary" id="begin" type="button">Begin ceremony</button>
+        <button class="btn" id="next" type="button">Speak next line <kbd>Space</kbd></button>
+        <button class="btn" id="auto" type="button">Auto-run <kbd>A</kbd></button>
+        <button class="btn" id="cut" type="button">Cut off <kbd>X</kbd></button>
+        <button class="btn" id="nextSec" type="button">Next section <kbd>N</kbd></button>
+        <button class="btn" id="close" type="button">Close ceremony</button>
+      </div>
+      <p class="note">Auto-run speaks the next fair line after each one finishes, and waits quietly when the queue is empty. Section changes and the closing wait for the current line to end.</p>
+    </section>
+
+    <section>
+      <h2>Add a line <span class="count" id="peopleCount"></span></h2>
+      <form id="addForm" class="row" autocomplete="off">
+        <label class="field" style="flex:1 1 120px">Contributor
+          <input type="text" id="addName" maxlength="40" placeholder="Rob Wittig">
+        </label>
+        <label class="field grow" style="flex-basis:100%">Their one line
+          <input type="text" id="addText" maxlength="240" placeholder="Graduates, you have achieved nothing at scale.">
+        </label>
+        <button class="btn primary" type="submit">Add to queue</button>
+      </form>
+      <details>
+        <summary>Paste a chunk of Zoom chat</summary>
+        <div style="display:grid;gap:8px">
+          <textarea id="chatPaste" placeholder="00:41:12 From Rob Wittig to Everyone:&#10;Never trust a pig who stands on its head.&#10;00:41:30 From Liza Long to Everyone:&#10;I want to thank my dissertation for writing itself."></textarea>
+          <div class="btns"><button class="btn" id="chatAdd" type="button">Add lines from chat</button></div>
+          <p class="note">Copy the chat (or open the saved chat file), paste it here as often as you like. Lines already added are skipped, and private messages are ignored.</p>
+        </div>
+      </details>
+      <div class="toast" id="addToast" role="status"></div>
+    </section>
+
+    <section>
+      <h2>Queue <span class="count" id="queueCount"></span></h2>
+      <p class="note">Each person has one line in the running at a time. ChatP.I.G. picks whoever has gone longest without being heard, so nobody speaks twice in a row while others wait.</p>
+      <div class="btns">
+        <button class="btn small" id="addSamples" type="button">Add sample lines for rehearsal</button>
+        <button class="btn small" id="clearSamples" type="button" hidden>Remove sample lines</button>
+      </div>
+      <ol class="queue" id="queue"></ol>
+    </section>
+
+    <section>
+      <h2>Speech outline</h2>
+      <ol class="outline" id="outline"></ol>
+      <details>
+        <summary>Edit sections</summary>
+        <div style="display:grid;gap:8px">
+          <textarea id="sectionsEdit" rows="6"></textarea>
+          <div class="btns"><button class="btn small" id="sectionsSave" type="button">Save sections</button></div>
+          <p class="note">One section per line. Click a section above to jump to it.</p>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <h2>ChatP.I.G.'s voice</h2>
+      <label class="field">Voice
+        <select id="voice"></select>
+      </label>
+      <div class="sliders">
+        <label class="field">Pitch <span id="pitchVal"></span><input type="range" id="pitch" min="0" max="2" step="0.05"></label>
+        <label class="field">Speed <span id="rateVal"></span><input type="range" id="rate" min="0.5" max="1.6" step="0.05"></label>
+        <label class="field">Pause <span id="gapVal"></span><input type="range" id="gap" min="0" max="6" step="0.5"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="connectors"> Add pompous connecting phrases between lines</label>
+      <label class="check"><input type="checkbox" id="announce"> Announce each new section aloud</label>
+      <div class="btns"><button class="btn small" id="testVoice" type="button">Test voice</button></div>
+      <details>
+        <summary>Edit opening and closing remarks</summary>
+        <div style="display:grid;gap:8px">
+          <label class="field">Opening<textarea id="openingEdit" rows="4"></textarea></label>
+          <label class="field">Closing<textarea id="closingEdit" rows="4"></textarea></label>
+          <label class="field">Connecting phrases, one per line<textarea id="connEdit" rows="5"></textarea></label>
+        </div>
+      </details>
+      <p class="note">Voices come from this computer's browser. Chrome and Edge offer the most. For Zoom, share this tab or window with "Share sound" turned on.</p>
+    </section>
+
+    <section>
+      <h2>Transcript <span class="count" id="spokenCount"></span></h2>
+      <div class="transcript" id="transcript"></div>
+      <div class="btns">
+        <button class="btn small" id="copyTx" type="button">Copy transcript</button>
+        <button class="btn small danger" id="reset" type="button">Clear everything</button>
+      </div>
+      <textarea id="copyFallback" hidden readonly rows="6"></textarea>
+      <div class="toast" id="txToast" role="status"></div>
+    </section>
+  </aside>
+</div>
+
+<script src="config.js"></script>
+<script src="store.js"></script>
+<script src="stage.js"></script>
+</body>
+</html>
