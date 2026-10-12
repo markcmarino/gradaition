@@ -21,7 +21,15 @@
 // These values are not passwords. Firebase expects them to be public.
 
 window.GRAD_CONFIG = {
-  firebase: null,
+  firebase: {
+  apiKey: "AIzaSyC2yvjnMNwFdr9JNbqA9UKgpStWE2O3ZYM",
+  authDomain: "underacademy-gradaition.firebaseapp.com",
+  databaseURL: "https://underacademy-gradaition-default-rtdb.firebaseio.com",
+  projectId: "underacademy-gradaition",
+  storageBucket: "underacademy-gradaition.firebasestorage.app",
+  messagingSenderId: "802433578291",
+  appId: "1:802433578291:web:95c217b0b07e5e266aba46"
+},
 
   // Change this to start a fresh ceremony without deleting the old one
   // (for example "rehearsal" for practice, then "gradaition2026" for the real thing).
