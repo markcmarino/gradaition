@@ -103,21 +103,54 @@
   }
   const currentVoice = () => voices.find(v => v.voiceURI === L.settings.voiceURI) || null;
 
+  // Speak in sentence-sized pieces, and only report "done" once the voice is truly silent.
+  // (Chrome sometimes says a long utterance has ended while it is still talking.)
+  const keepAlive = []; // holding references stops Chrome from dropping utterances mid-speech
   function speakText(text, done) {
-    let finished = false, safety;
-    const fin = () => { if (finished) return; finished = true; clearTimeout(safety); speaking = false; send({ type: 'speaking', on: false }); currentFin = null; done(); };
+    let finished = false, hardStop = null, watch = null, waitT = null;
+    const fin = () => {
+      if (finished) return; finished = true;
+      clearTimeout(hardStop); clearInterval(watch); clearTimeout(waitT);
+      speaking = false; send({ type: 'speaking', on: false }); currentFin = null; keepAlive.length = 0; done();
+    };
     currentFin = fin;
-    const words = text.split(/\s+/).length;
+    const spoken = text.replace(/ChatP\.?I\.?G\.?/gi, 'Chat P. I. G.');
+    const words = spoken.split(/\s+/).length;
     const est = (words * 0.42 / L.settings.rate + 2) * 1000;
     speaking = true; send({ type: 'speaking', on: true });
-    if (!('speechSynthesis' in window)) { safety = setTimeout(fin, est); return; }
-    const u = new SpeechSynthesisUtterance(text.replace(/ChatP\.?I\.?G\.?/gi, 'Chat P. I. G.'));
-    const v = currentVoice(); if (v) u.voice = v;
-    u.pitch = +L.settings.pitch; u.rate = +L.settings.rate;
-    u.onboundary = () => { lastBoundary = performance.now(); send({ type: 'boundary' }); };
-    u.onend = fin; u.onerror = fin;
-    speechSynthesis.speak(u);
-    safety = setTimeout(fin, est * 2.5 + 4000);
+    if (!('speechSynthesis' in window)) { hardStop = setTimeout(fin, est); return; }
+    const synth = speechSynthesis;
+
+    // Split after sentence endings, but not after single initials like the P. in P. I. G.
+    const chunks = [];
+    spoken.split(/(?<!\b[A-Z]\.)(?<=[.!?]["')\]]?)\s+/).forEach(c => {
+      c = c.trim(); if (!c) return;
+      if (chunks.length && (chunks[chunks.length - 1].length < 25 || c.length < 12)) chunks[chunks.length - 1] += ' ' + c;
+      else chunks.push(c);
+    });
+    if (!chunks.length) chunks.push(spoken);
+
+    let i = 0;
+    const waitForSilence = () => {
+      const t0 = Date.now();
+      watch = setInterval(() => { if ((!synth.speaking && !synth.pending) || Date.now() - t0 > 10000) fin(); }, 150);
+    };
+    const next = () => {
+      if (finished) return;
+      if (i >= chunks.length) { waitForSilence(); return; }
+      const u = new SpeechSynthesisUtterance(chunks[i++]);
+      const v = currentVoice(); if (v) u.voice = v;
+      u.pitch = +L.settings.pitch; u.rate = +L.settings.rate;
+      u.onboundary = () => { lastBoundary = performance.now(); send({ type: 'boundary' }); };
+      u.onend = next;
+      u.onerror = e => { if (e.error === 'interrupted' || e.error === 'canceled') fin(); else next(); };
+      keepAlive.push(u);
+      synth.speak(u);
+    };
+    // If anything is still talking, wait for it to stop before starting.
+    const start = () => { if (finished) return; if (synth.speaking || synth.pending) { waitT = setTimeout(start, 150); return; } next(); };
+    start();
+    hardStop = setTimeout(() => { synth.cancel(); fin(); }, est * 3 + 20000); // last resort if the voice engine hangs
   }
 
   function enqueue(a) { actions.push(a); pump(); }
@@ -135,7 +168,11 @@
     clearTimeout(pumpTimer);
     if (busy) return;
     let a = actions.shift();
-    if (!a && auto) a = { type: 'line' };
+    if (!a && auto) {
+      // Auto-run holds until Begin ceremony has been pressed.
+      if (sectionIdx() < 0) { renderStatus('begin'); pumpTimer = setTimeout(pump, 1200); return; }
+      a = { type: 'line' };
+    }
     if (!a) { renderStatus(); return; }
 
     if (a.type === 'line') {
@@ -233,6 +270,7 @@
     if (!online) { pill.classList.add('offline'); label = 'Offline, reconnecting'; }
     else if (busy) { pill.classList.add('speaking'); label = 'Speaking'; }
     else if (force === 'waiting') { pill.classList.add('waiting'); label = 'Waiting for lines'; }
+    else if (force === 'begin') { pill.classList.add('waiting'); label = 'Auto-run waits for Begin'; }
     else if (auto) label = 'Auto-run on';
     txt.textContent = label;
     $('auto').classList.toggle('on', auto);
@@ -407,9 +445,22 @@
   });
 
   // The stage window asks for the current picture when it opens, and forwards key presses.
+  // Warn if a second control window is open in this browser: both would talk.
+  const myId = Math.random().toString(36).slice(2);
+  function warnDuplicate() {
+    let w = document.getElementById('dupWarn');
+    if (!w) {
+      w = document.createElement('div'); w.id = 'dupWarn'; w.className = 'toast err'; w.setAttribute('role', 'alert');
+      w.style.cssText = 'padding:10px 0;font-size:.9rem';
+      w.textContent = 'Another ChatP.I.G. control window is open in this browser. Close all but one, or ChatP.I.G. will talk over himself.';
+      document.querySelector('.status-row').after(w);
+    }
+  }
   if (chan) chan.onmessage = e => {
     const m = e.data || {};
-    if (m.type === 'hello') broadcastView();
+    if (m.type === 'ctl-ping' && m.id !== myId) { warnDuplicate(); chan.postMessage({ type: 'ctl-pong', id: myId }); }
+    else if (m.type === 'ctl-pong' && m.id !== myId) warnDuplicate();
+    else if (m.type === 'hello') broadcastView();
     else if (m.type === 'key') handleKey(m.key, m.code, true);
   };
   $('openStage').addEventListener('click', () => {
@@ -418,6 +469,7 @@
     else toast('addToast', 'Stage window opened. Share that window in Zoom, with Share sound turned on.');
   });
   if (!chan) $('openStage').disabled = true;
+  else chan.postMessage({ type: 'ctl-ping', id: myId });
 
   const st = L.settings;
   const bindRange = (id, key, fmt) => {
