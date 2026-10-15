@@ -1,3 +1,14 @@
+// Shrink the caption until the whole line fits under ChatP.I.G. (used by both windows).
+window.fitCaption = function () {
+  const cap = document.querySelector('.caption'), line = document.getElementById('capLine');
+  if (!cap || !line) return;
+  line.style.fontSize = ''; cap.style.overflowY = 'hidden';
+  let size = parseFloat(getComputedStyle(line).fontSize), guard = 0;
+  while (cap.scrollHeight > cap.clientHeight + 1 && size > 15 && guard++ < 40) { size *= 0.92; line.style.fontSize = size.toFixed(1) + 'px'; }
+  if (cap.scrollHeight > cap.clientHeight + 1) cap.style.overflowY = 'auto'; // last resort: scroll inside the caption only
+};
+(() => { let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(window.fitCaption, 120); }); })();
+
 // The stage window: only ChatP.I.G., the banner and the captions.
 // It mirrors the control window through a BroadcastChannel in the same browser.
 (() => {
@@ -17,6 +28,7 @@
     $('capLine').classList.toggle('idle', !!v.idle);
     $('capCredit').innerHTML = v.credit; // built with textContent in the control window, so names arrive escaped
     speaking = !!v.speaking;
+    window.fitCaption();
   }
 
   if (chan) {

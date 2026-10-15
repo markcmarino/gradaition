@@ -188,13 +188,20 @@
 
     if (a.type === 'line') {
       const { cands } = order();
-      if (!cands.length) {
+      // "Play next" on a specific line jumps the fair order.
+      let picked = null;
+      if (a.id) {
+        const l = lines[a.id];
+        if (l && l.status === 'pending') picked = { id: a.id, ...l };
+        else { pump(); return; } // vetoed or already spoken in the meantime
+      }
+      if (!picked && !cands.length) {
         if (auto) { renderStatus('waiting'); pumpTimer = setTimeout(pump, 1200); }
         else { toast('addToast', 'The queue is empty. Waiting for the audience to send lines.', true); renderStatus(); }
         return;
       }
       if (sectionIdx() < 0) startSection(0);
-      const p = cands[0];
+      const p = picked || cands[0];
       let conn = '';
       if (L.settings.connectors && L.linesSinceSection > 0 && L.connectors.length && Math.random() < 0.35) {
         const pool = L.connectors.filter(c => c !== L.lastConnector);
@@ -236,6 +243,7 @@
     if (who === 'ChatP.I.G.') cr.textContent = 'ChatP.I.G., unprompted';
     else if (who) { cr.append('prompted by '); const b = document.createElement('b'); b.textContent = who; cr.append(b); }
     else if (isSection) cr.textContent = 'Part ' + (sectionIdx() + 1) + ' of ' + sections().length;
+    if (window.fitCaption) window.fitCaption();
     broadcastView();
   }
 
@@ -309,7 +317,13 @@
       body.append(who, what);
       const v = document.createElement('button'); v.className = 'veto'; v.type = 'button'; v.textContent = 'Veto'; v.title = 'Decline this line. The author can write another.';
       v.addEventListener('click', () => { store.updateLine(p.id, { status: 'vetoed' }); });
-      li.append(r, body, v); q.append(li);
+      const pl = document.createElement('button'); pl.className = 'veto play'; pl.type = 'button';
+      const queued = actions.some(x => x.id === p.id);
+      pl.textContent = queued ? 'Queued' : 'Play next'; pl.disabled = queued;
+      pl.title = 'Have ChatP.I.G. say this line next, ahead of the usual order';
+      pl.addEventListener('click', () => { if (!actions.some(x => x.id === p.id)) { actions.push({ type: 'line', id: p.id }); render(); pump(); } });
+      const btns = document.createElement('div'); btns.className = 'qbtns'; btns.append(pl, v);
+      li.append(r, body, btns); q.append(li);
     };
     cands.forEach((p, i) => {
       const chips = []; if (i === 0) chips.push(['up next', true]);
