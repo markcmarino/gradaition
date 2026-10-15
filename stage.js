@@ -86,6 +86,7 @@
 
   // ---------- speech ----------
   let voices = [];
+  let isLeader = false, standbyByChoice = false;
   let busy = false, auto = false, actions = [], pumpTimer = null, currentFin = null, speaking = false, lastBoundary = 0;
 
   function loadVoices() {
@@ -94,9 +95,10 @@
     const sel = $('voice'); sel.textContent = '';
     if (!voices.length) { const o = document.createElement('option'); o.textContent = 'Default voice'; o.value = ''; sel.append(o); return; }
     const sorted = [...voices].sort((a, b) => (b.lang.startsWith('en') - a.lang.startsWith('en')) || a.name.localeCompare(b.name));
-    for (const v of sorted) { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name + ' (' + v.lang + ')'; sel.append(o); }
+    for (const v of sorted) { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name + ' (' + v.lang + ')' + (v.localService === false ? ', online' : ''); sel.append(o); }
     if (!L.settings.voiceURI || !voices.some(v => v.voiceURI === L.settings.voiceURI)) {
-      const pref = voices.find(v => /UK English Male|Daniel|Arthur|Fred|Ralph/i.test(v.name)) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+      const local = voices.filter(v => v.localService !== false);
+      const pref = local.find(v => /Daniel|Arthur|Fred|Ralph|Alex|David/i.test(v.name)) || local.find(v => v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
       L.settings.voiceURI = pref.voiceURI; saveLocal();
     }
     sel.value = L.settings.voiceURI;
@@ -130,7 +132,14 @@
     });
     if (!chunks.length) chunks.push(spoken);
 
-    let i = 0;
+    let i = 0, chunkStart = 0, chunkMin = 0;
+    // A sentence of N words can't really be over before roughly this long, whatever the voice engine claims.
+    const minMs = s => (s.split(/\s+/).length * 0.42 / Math.max(0.5, +L.settings.rate) + (s.match(/[,;:]/g) || []).length * 0.2 + 0.3) * 1000;
+    const afterChunk = () => {
+      if (finished) return;
+      const left = chunkMin - (performance.now() - chunkStart);
+      if (left > 0) waitT = setTimeout(next, left); else next();
+    };
     const waitForSilence = () => {
       const t0 = Date.now();
       watch = setInterval(() => { if ((!synth.speaking && !synth.pending) || Date.now() - t0 > 10000) fin(); }, 150);
@@ -142,9 +151,10 @@
       const v = currentVoice(); if (v) u.voice = v;
       u.pitch = +L.settings.pitch; u.rate = +L.settings.rate;
       u.onboundary = () => { lastBoundary = performance.now(); send({ type: 'boundary' }); };
-      u.onend = next;
-      u.onerror = e => { if (e.error === 'interrupted' || e.error === 'canceled') fin(); else next(); };
+      u.onend = afterChunk;
+      u.onerror = e => { if (e.error === 'interrupted' || e.error === 'canceled') fin(); else afterChunk(); };
       keepAlive.push(u);
+      chunkStart = performance.now(); chunkMin = minMs(u.text);
       synth.speak(u);
     };
     // If anything is still talking, wait for it to stop before starting.
@@ -167,6 +177,7 @@
   function pump() {
     clearTimeout(pumpTimer);
     if (busy) return;
+    if (!isLeader) { renderStatus('standby'); pumpTimer = setTimeout(pump, 1000); return; }
     let a = actions.shift();
     if (!a && auto) {
       // Auto-run holds until Begin ceremony has been pressed.
@@ -268,6 +279,7 @@
     pill.className = 'pill' + (auto ? ' auto' : '');
     let label = 'Idle';
     if (!online) { pill.classList.add('offline'); label = 'Offline, reconnecting'; }
+    else if (!isLeader) { pill.classList.add('offline'); label = 'Standby: another control window is running'; }
     else if (busy) { pill.classList.add('speaking'); label = 'Speaking'; }
     else if (force === 'waiting') { pill.classList.add('waiting'); label = 'Waiting for lines'; }
     else if (force === 'begin') { pill.classList.add('waiting'); label = 'Auto-run waits for Begin'; }
@@ -545,7 +557,58 @@
 
   store.onLines(v => { lines = v; render(); });
   store.onTranscript(v => { transcript = v; renderTranscript(); });
-  store.onState(v => { shared = v; render(); });
+  store.onState(v => {
+    shared = v; checkController(); render();
+    if (!isLeader && !shared.controller && !otherAlive() && !standbyByChoice) claim();
+  });
+
+  // ---------- one speaker at a time ----------
+  // The active control window writes a heartbeat. Any other control window, in any browser or on any
+  // computer, sees it and stays silent until you click "Make this the active window".
+  let otherSeen = { id: null, at: null, localTime: 0 };
+  function checkController() {
+    const c = shared.controller;
+    if (!c || c.id === myId) return;
+    if (c.at !== otherSeen.at || c.id !== otherSeen.id) otherSeen = { id: c.id, at: c.at, localTime: performance.now() };
+    if (isLeader) {
+      // The most recent claim wins. An older window's heartbeat doesn't knock out a newer active window.
+      const newer = (c.since || 0) > mySince || ((c.since || 0) === mySince && c.id > myId);
+      if (newer) { isLeader = false; cutOff(); showStandby(); renderStatus(); }
+      else beat();
+    }
+  }
+  const otherAlive = () => otherSeen.id && performance.now() - otherSeen.localTime < 10000;
+  let mySince = 0;
+  const beat = () => store.setState({ controller: { id: myId, since: mySince, at: Date.now() } });
+  function claim() {
+    mySince = Date.now(); isLeader = true; hideStandby(); renderStatus(); beat();
+  }
+  setInterval(() => {
+    if (isLeader) beat();
+    else if (!otherAlive() && !standbyByChoice) claim();
+  }, 3000);
+  function showStandby() {
+    let w = $('standbyWarn');
+    if (!w) {
+      w = document.createElement('div'); w.id = 'standbyWarn'; w.setAttribute('role', 'alert');
+      w.style.cssText = 'padding:12px;margin-top:10px;border:1px solid #e07a8a;border-radius:6px;background:#4a1420;display:grid;gap:8px;font-size:.9rem';
+      const p = document.createElement('div');
+      p.textContent = 'Another ChatP.I.G. control window is running, maybe in another browser, tab, or computer. This one is silent so the two don\'t talk over each other.';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn primary'; b.textContent = 'Make this the active window';
+      b.addEventListener('click', () => { standbyByChoice = false; claim(); });
+      w.append(p, b);
+      document.querySelector('.status-row').after(w);
+    }
+    w.hidden = false;
+  }
+  function hideStandby() { const w = $('standbyWarn'); if (w) w.hidden = true; }
+  // On opening: if another window has been beating recently, wait to see whether it's alive before claiming.
+  setTimeout(() => {
+    const c = shared.controller;
+    if (c && c.id !== myId && otherAlive()) { isLeader = false; showStandby(); renderStatus(); }
+    else if (!isLeader) claim();
+  }, 4500);
+
 
   if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
   else { const o = document.createElement('option'); o.textContent = 'Speech is not available in this browser'; $('voice').append(o); }

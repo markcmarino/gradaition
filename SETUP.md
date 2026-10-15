@@ -97,6 +97,8 @@ Keep the control window open the whole time. The voice comes from it, and the st
 ## If something goes wrong
 
 - **The stage window is frozen or blank.** Close it and click **Open stage window** again. It picks up where things are.
+- **A red "Standby" box appears.** Another control window is running somewhere: another tab, another browser, or someone else's computer. Only one window speaks at a time. Close the others, or click **Make this the active window** on the one you want.
+- **Lines overlap or cut each other off.** Pick a voice without "online" in its name. On-device voices are the most reliable.
 - **ChatP.I.G. is silent.** Click **Test voice**. If you hear nothing, try another voice from the list. Chrome and Edge have the most voices. Check that **Share sound** is on in Zoom.
 - **Audience lines don't arrive.** The stage's **Audience link** panel must say **live**. If it says rehearsal mode, `config.js` is missing the Firebase settings or has a typo, such as a missing comma.
 - **Someone is stuck on "Waiting its turn."** That's the fairness rule working. Their line is in the queue, and ChatP.I.G. reads whoever has been heard least first.
