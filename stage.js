@@ -286,6 +286,8 @@
     else if (auto) label = 'Auto-run on';
     txt.textContent = label;
     $('auto').classList.toggle('on', auto);
+    const ab = $('auto'); const want = auto ? 'Auto-run is ON' : 'Auto-run';
+    if (ab.firstChild.nodeValue.trim() !== want) ab.firstChild.nodeValue = want + ' ';
     $('auto').setAttribute('aria-pressed', String(auto));
   }
 
